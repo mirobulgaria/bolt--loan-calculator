@@ -1,4 +1,4 @@
-import { DollarSign, Percent, Calendar } from 'lucide-react';
+import { Euro, Percent, Calendar } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 
 interface Props {
@@ -86,7 +86,7 @@ export default function LoanInputsPanel({
           label={t('creditAmount')}
           value={principal}
           onChange={onPrincipalChange}
-          icon={<DollarSign size={16} />}
+          icon={<Euro size={16} />}
           placeholder={t('creditPlaceholder')}
           suffix="EUR"
           min="1"
@@ -119,7 +119,7 @@ export default function LoanInputsPanel({
             label={t('yearlyExtraPayment')}
             value={annualPayment}
             onChange={onAnnualPaymentChange}
-            icon={<DollarSign size={16} />}
+            icon={<Euro size={16} />}
             placeholder={t('extraPlaceholder')}
             suffix="EUR"
             min="0"
@@ -129,7 +129,7 @@ export default function LoanInputsPanel({
             label={t('monthlyExtraPayment')}
             value={extraPayment}
             onChange={onExtraPaymentChange}
-            icon={<DollarSign size={16} />}
+            icon={<Euro size={16} />}
             placeholder={t('extraPlaceholder')}
             suffix="EUR"
             min="0"
@@ -139,7 +139,7 @@ export default function LoanInputsPanel({
             label={t('oneTimePayment')}
             value={oneTimePayment}
             onChange={onOneTimePaymentChange}
-            icon={<DollarSign size={16} />}
+            icon={<Euro size={16} />}
             placeholder={t('extraPlaceholder')}
             suffix="EUR"
             min="0"
