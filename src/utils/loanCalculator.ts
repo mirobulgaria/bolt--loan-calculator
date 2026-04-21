@@ -53,18 +53,20 @@ export function calculateLoan(inputs: LoanInputs): LoanResult | null {
 
     balance = Math.max(0, balance - principalPayment);
 
+    let totalMonthPayment = actualPayment;
+
+    if (annualPayment > 0 && month % 12 === 0 && balance > 0) {
+      balance = Math.max(0, balance - annualPayment);
+      totalMonthPayment += annualPayment;
+    }
+
     schedule.push({
       month,
-      payment: actualPayment,
+      payment: totalMonthPayment,
       principal: principalPayment,
       interest: interestPayment,
       balance,
     });
-
-    if (annualPayment > 0 && month % 12 === 0 && balance > 0) {
-      balance = Math.max(0, balance - annualPayment);
-      schedule[schedule.length - 1].balance = balance;
-    }
 
     if (balance <= 0) break;
   }
