@@ -88,7 +88,7 @@ export default function LoanInputsPanel({
           onChange={onPrincipalChange}
           icon={<DollarSign size={16} />}
           placeholder={t('creditPlaceholder')}
-          suffix="USD"
+          suffix="EUR"
           min="1"
           step="100"
         />
@@ -121,7 +121,7 @@ export default function LoanInputsPanel({
             onChange={onAnnualPaymentChange}
             icon={<DollarSign size={16} />}
             placeholder={t('extraPlaceholder')}
-            suffix="USD"
+            suffix="EUR"
             min="0"
             step="100"
           />
@@ -131,7 +131,7 @@ export default function LoanInputsPanel({
             onChange={onExtraPaymentChange}
             icon={<DollarSign size={16} />}
             placeholder={t('extraPlaceholder')}
-            suffix="USD"
+            suffix="EUR"
             min="0"
             step="100"
           />
@@ -141,7 +141,7 @@ export default function LoanInputsPanel({
             onChange={onOneTimePaymentChange}
             icon={<DollarSign size={16} />}
             placeholder={t('extraPlaceholder')}
-            suffix="USD"
+            suffix="EUR"
             min="0"
             step="100"
           />
