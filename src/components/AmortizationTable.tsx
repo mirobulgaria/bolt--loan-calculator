@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { MonthlyEntry, formatCurrency } from '../utils/loanCalculator';
 import { useLanguage } from '../LanguageContext';
 
@@ -19,6 +19,32 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color:
   );
 }
 
+function generateCSV(schedule: MonthlyEntry[], headers: string[]): string {
+  const rows = [headers];
+  schedule.forEach((entry) => {
+    rows.push([
+      entry.month.toString(),
+      entry.payment.toFixed(2),
+      entry.principal.toFixed(2),
+      entry.interest.toFixed(2),
+      entry.balance.toFixed(2),
+    ]);
+  });
+  return rows.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
+}
+
+function downloadCSV(csv: string, filename: string) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 export default function AmortizationTable({ schedule, principal }: Props) {
   const { t } = useLanguage();
   const [page, setPage] = useState(0);
@@ -28,6 +54,11 @@ export default function AmortizationTable({ schedule, principal }: Props) {
 
   const tableHeaders = [t('month'), t('payment'), t('principalColumn'), t('interestColumn'), t('balance')];
 
+  const handleExport = () => {
+    const csv = generateCSV(schedule, tableHeaders);
+    downloadCSV(csv, 'amortization-schedule.csv');
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between">
@@ -35,27 +66,36 @@ export default function AmortizationTable({ schedule, principal }: Props) {
           <h2 className="text-xl font-bold text-slate-800">{t('amortizationSchedule')}</h2>
           <p className="text-sm text-slate-400 mt-0.5">{schedule.length} {t('month').toLowerCase()}s</p>
         </div>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2 text-sm text-slate-600">
-            <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span className="font-medium">
-              {page + 1} / {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page === totalPages - 1}
-              className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <Download size={16} />
+            CSV
+          </button>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="font-medium">
+                {page + 1} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page === totalPages - 1}
+                className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="overflow-x-auto">
