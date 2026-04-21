@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MonthlyEntry, formatCurrency } from '../utils/loanCalculator';
+import { useLanguage } from '../LanguageContext';
 
 const PAGE_SIZE = 12;
 
@@ -19,17 +20,20 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color:
 }
 
 export default function AmortizationTable({ schedule, principal }: Props) {
+  const { t } = useLanguage();
   const [page, setPage] = useState(0);
   const totalPages = Math.ceil(schedule.length / PAGE_SIZE);
   const slice = schedule.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const maxPayment = schedule[0]?.payment ?? 1;
 
+  const tableHeaders = [t('month'), t('payment'), t('principalColumn'), t('interestColumn'), t('balance')];
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Amortization Schedule</h2>
-          <p className="text-sm text-slate-400 mt-0.5">{schedule.length} monthly payments</p>
+          <h2 className="text-xl font-bold text-slate-800">{t('amortizationSchedule')}</h2>
+          <p className="text-sm text-slate-400 mt-0.5">{schedule.length} {t('month').toLowerCase()}s</p>
         </div>
         {totalPages > 1 && (
           <div className="flex items-center gap-2 text-sm text-slate-600">
@@ -58,7 +62,7 @@ export default function AmortizationTable({ schedule, principal }: Props) {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50">
-              {['Month', 'Payment', 'Principal', 'Interest', 'Balance'].map((h) => (
+              {tableHeaders.map((h) => (
                 <th
                   key={h}
                   className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider"

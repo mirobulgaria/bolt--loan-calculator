@@ -1,5 +1,6 @@
 import { TrendingUp, CreditCard, BarChart2, Clock } from 'lucide-react';
 import { LoanResult, formatCurrency } from '../utils/loanCalculator';
+import { useLanguage } from '../LanguageContext';
 
 interface Props {
   result: LoanResult;
@@ -45,7 +46,7 @@ function StatCard({
   );
 }
 
-function DonutChart({ principal, totalInterest }: { principal: number; totalInterest: number }) {
+function DonutChart({ principal, totalInterest, principalLabel, interestLabel, breakdownLabel }: { principal: number; totalInterest: number; principalLabel: string; interestLabel: string; breakdownLabel: string }) {
   const total = principal + totalInterest;
   const principalPct = (principal / total) * 100;
   const interestPct = (totalInterest / total) * 100;
@@ -57,7 +58,7 @@ function DonutChart({ principal, totalInterest }: { principal: number; totalInte
 
   return (
     <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 flex flex-col gap-4">
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Payment Breakdown</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{breakdownLabel}</p>
       <div className="flex items-center gap-6">
         <svg width="128" height="128" viewBox="0 0 128 128">
           <circle cx="64" cy="64" r={radius} fill="none" stroke="#e2e8f0" strokeWidth="16" />
@@ -89,14 +90,14 @@ function DonutChart({ principal, totalInterest }: { principal: number; totalInte
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-blue-600 inline-block" />
             <div>
-              <p className="text-xs text-slate-500">Principal</p>
+              <p className="text-xs text-slate-500">{principalLabel}</p>
               <p className="text-sm font-bold text-slate-800">{principalPct.toFixed(1)}%</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-orange-400 inline-block" />
             <div>
-              <p className="text-xs text-slate-500">Interest</p>
+              <p className="text-xs text-slate-500">{interestLabel}</p>
               <p className="text-sm font-bold text-slate-800">{interestPct.toFixed(1)}%</p>
             </div>
           </div>
@@ -107,37 +108,44 @@ function DonutChart({ principal, totalInterest }: { principal: number; totalInte
 }
 
 export default function LoanSummary({ result, principal, extraPayment = 0 }: Props) {
+  const { t } = useLanguage();
   const monthlyPaymentWithExtra = result.monthlyPayment + extraPayment;
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
       <StatCard
         icon={<CreditCard size={20} />}
-        label="Monthly Payment (base)"
+        label={t('monthlyPaymentBase')}
         value={formatCurrency(result.monthlyPayment)}
         highlight
       />
       <StatCard
         icon={<CreditCard size={20} />}
-        label="Monthly Payment (with extra)"
+        label={t('monthlyPaymentWithExtra')}
         value={formatCurrency(monthlyPaymentWithExtra)}
       />
       <StatCard
         icon={<BarChart2 size={20} />}
-        label="Total Payment"
+        label={t('totalPayment')}
         value={formatCurrency(result.totalPayment)}
       />
       <StatCard
         icon={<TrendingUp size={20} />}
-        label="Total Interest"
+        label={t('totalInterest')}
         value={formatCurrency(result.totalInterest)}
       />
       <StatCard
         icon={<Clock size={20} />}
-        label="Total Period"
+        label={t('totalPeriod')}
         value={`${result.schedule.length} mo`}
       />
-      <DonutChart principal={principal} totalInterest={result.totalInterest} />
+      <DonutChart
+        principal={principal}
+        totalInterest={result.totalInterest}
+        principalLabel={t('principal')}
+        interestLabel={t('interest')}
+        breakdownLabel={t('paymentBreakdown')}
+      />
     </div>
   );
 }

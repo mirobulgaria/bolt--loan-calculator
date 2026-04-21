@@ -1,4 +1,5 @@
 import { DollarSign, Percent, Calendar } from 'lucide-react';
+import { useLanguage } from '../LanguageContext';
 
 interface Props {
   principal: string;
@@ -76,75 +77,70 @@ export default function LoanInputsPanel({
   onAnnualPaymentChange,
   onCalculate,
 }: Props) {
+  const { t } = useLanguage();
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-slate-800 mb-2">Loan Parameters</h2>
-        <p className="text-sm text-slate-500">Required fields</p>
-      </div>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-5 mb-6">
         <InputField
-          label="Credit Amount"
+          label={t('creditAmount')}
           value={principal}
           onChange={onPrincipalChange}
           icon={<DollarSign size={16} />}
-          placeholder="10,000"
+          placeholder={t('creditPlaceholder')}
           suffix="USD"
           min="1"
           step="100"
         />
         <InputField
-          label="Annual Interest"
+          label={t('interestRate')}
           value={annualRate}
           onChange={onRateChange}
           icon={<Percent size={16} />}
-          placeholder="5.5"
+          placeholder={t('ratePlaceholder')}
           suffix="%"
           min="0"
           step="0.1"
         />
         <InputField
-          label="Period"
+          label={t('periodMonths')}
           value={periodMonths}
           onChange={onPeriodChange}
           icon={<Calendar size={16} />}
-          placeholder="36"
+          placeholder={t('periodPlaceholder')}
           suffix="mo"
           min="1"
         />
       </div>
 
       <div className="pt-6 border-t border-slate-200">
-        <h3 className="text-sm font-bold text-slate-700 mb-4 uppercase tracking-wide">
-          Optional: Acceleration Options
-        </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-           <InputField
-            label="Yearly Extra Payment"
+          <InputField
+            label={t('yearlyExtraPayment')}
             value={annualPayment}
             onChange={onAnnualPaymentChange}
             icon={<DollarSign size={16} />}
-            placeholder="0"
+            placeholder={t('extraPlaceholder')}
             suffix="USD"
             min="0"
             step="100"
           />
           <InputField
-            label="Monthly Extra Payment"
+            label={t('monthlyExtraPayment')}
             value={extraPayment}
             onChange={onExtraPaymentChange}
             icon={<DollarSign size={16} />}
-            placeholder="0"
+            placeholder={t('extraPlaceholder')}
             suffix="USD"
             min="0"
             step="100"
           />
           <InputField
-            label="One-Time Extra Payment"
+            label={t('oneTimePayment')}
             value={oneTimePayment}
             onChange={onOneTimePaymentChange}
             icon={<DollarSign size={16} />}
-            placeholder="0"
+            placeholder={t('extraPlaceholder')}
             suffix="USD"
             min="0"
             step="100"
@@ -156,7 +152,7 @@ export default function LoanInputsPanel({
         onClick={onCalculate}
         className="mt-6 w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-xl transition-colors duration-200 text-base tracking-wide shadow-sm"
       >
-        Calculate Loan
+        {t('calculate')}
       </button>
     </div>
   );

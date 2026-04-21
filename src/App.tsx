@@ -3,9 +3,12 @@ import { Calculator } from 'lucide-react';
 import LoanInputsPanel from './components/LoanInputs';
 import LoanSummary from './components/LoanSummary';
 import AmortizationTable from './components/AmortizationTable';
+import LanguageSwitcher from './components/LanguageSwitcher';
 import { calculateLoan, LoanResult } from './utils/loanCalculator';
+import { LanguageProvider, useLanguage } from './LanguageContext';
 
-export default function App() {
+function AppContent() {
+  const { t } = useLanguage();
   const [principal, setPrincipal] = useState('');
   const [annualRate, setAnnualRate] = useState('');
   const [periodMonths, setPeriodMonths] = useState('');
@@ -24,9 +27,9 @@ export default function App() {
     const o = parseFloat(oneTimePayment) || 0;
     const a = parseFloat(annualPayment) || 0;
 
-    if (!p || p <= 0) return setError('Enter a valid credit amount.');
-    if (isNaN(r) || r < 0) return setError('Enter a valid interest rate.');
-    if (!n || n <= 0) return setError('Enter a valid period in months.');
+    if (!p || p <= 0) return setError(t('enterValidCredit'));
+    if (isNaN(r) || r < 0) return setError(t('enterValidRate'));
+    if (!n || n <= 0) return setError(t('enterValidPeriod'));
 
     const res = calculateLoan({ principal: p, annualRate: r, periodMonths: n, extraPayment: e, oneTimePayment: o, annualPayment: a });
     setResult(res);
@@ -35,14 +38,17 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100">
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-3">
-          <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm">
-            <Calculator size={18} className="text-white" />
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+              <Calculator size={18} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-slate-800 leading-tight">{t('appTitle')}</h1>
+              <p className="text-xs text-slate-400 leading-tight">{t('appSubtitle')}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-slate-800 leading-tight">Loan Calculator</h1>
-            <p className="text-xs text-slate-400 leading-tight">Amortization & payment planner</p>
-          </div>
+          <LanguageSwitcher />
         </div>
       </header>
 
@@ -81,13 +87,21 @@ export default function App() {
             <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-4">
               <Calculator size={28} className="text-blue-500" />
             </div>
-            <p className="text-slate-600 font-medium text-lg">Enter your loan details above</p>
+            <p className="text-slate-600 font-medium text-lg">{t('enterLoanDetails')}</p>
             <p className="text-slate-400 text-sm mt-1">
-              Fill in the credit amount, interest rate, and period, then click Calculate.
+              {t('fillInDetails')}
             </p>
           </div>
         )}
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 }
