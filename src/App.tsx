@@ -71,7 +71,7 @@ export default function App() {
 
         {result && (
           <>
-            <LoanSummary result={result} principal={parseFloat(principal)} />
+            <LoanSummary result={result} principal={parseFloat(principal)} extraPayment={parseFloat(extraPayment) || 0} />
             <AmortizationTable schedule={result.schedule} principal={parseFloat(principal)} />
           </>
         )}

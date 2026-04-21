@@ -4,6 +4,7 @@ import { LoanResult, formatCurrency } from '../utils/loanCalculator';
 interface Props {
   result: LoanResult;
   principal: number;
+  extraPayment?: number;
 }
 
 function StatCard({
@@ -105,14 +106,21 @@ function DonutChart({ principal, totalInterest }: { principal: number; totalInte
   );
 }
 
-export default function LoanSummary({ result, principal }: Props) {
+export default function LoanSummary({ result, principal, extraPayment = 0 }: Props) {
+  const monthlyPaymentWithExtra = result.monthlyPayment + extraPayment;
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
       <StatCard
         icon={<CreditCard size={20} />}
-        label="Monthly Payment"
+        label="Monthly Payment (base)"
         value={formatCurrency(result.monthlyPayment)}
         highlight
+      />
+      <StatCard
+        icon={<CreditCard size={20} />}
+        label="Monthly Payment (with extra)"
+        value={formatCurrency(monthlyPaymentWithExtra)}
       />
       <StatCard
         icon={<BarChart2 size={20} />}
