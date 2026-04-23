@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { ChevronLeft, ChevronRight, Download, FileText } from 'lucide-react';
 import { MonthlyEntry, formatCurrency } from '../utils/loanCalculator';
 import { useLanguage } from '../LanguageContext';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const PAGE_SIZE = 12;
 
@@ -45,18 +47,58 @@ function downloadCSV(csv: string, filename: string) {
   document.body.removeChild(link);
 }
 
+async function downloadPDF(tableRef: HTMLDivElement | null) {
+  if (!tableRef) return;
+  try {
+    const canvas = await html2canvas(tableRef, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      logging: false,
+    });
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4',
+    });
+    const imgData = canvas.toDataURL('image/png');
+    const imgWidth = pdf.internal.pageSize.getWidth();
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pdf.internal.pageSize.getHeight();
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdf.internal.pageSize.getHeight();
+    }
+
+    pdf.save('amortization-schedule.pdf');
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+  }
+}
+
 export default function AmortizationTable({ schedule, principal }: Props) {
   const { t } = useLanguage();
   const [page, setPage] = useState(0);
+  const tableRef = useRef<HTMLDivElement>(null);
   const totalPages = Math.ceil(schedule.length / PAGE_SIZE);
   const slice = schedule.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const maxPayment = schedule[0]?.payment ?? 1;
 
   const tableHeaders = [t('month'), t('payment'), t('principalColumn'), t('interestColumn'), t('balance')];
 
-  const handleExport = () => {
+  const handleExportCSV = () => {
     const csv = generateCSV(schedule, tableHeaders);
     downloadCSV(csv, 'amortization-schedule.csv');
+  };
+
+  const handleExportPDF = () => {
+    downloadPDF(tableRef.current);
   };
 
   return (
@@ -68,11 +110,18 @@ export default function AmortizationTable({ schedule, principal }: Props) {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={handleExport}
+            onClick={handleExportCSV}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
           >
             <Download size={16} />
             CSV
+          </button>
+          <button
+            onClick={handleExportPDF}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <FileText size={16} />
+            PDF
           </button>
           {totalPages > 1 && (
             <div className="flex items-center gap-2 text-sm text-slate-600">
@@ -98,7 +147,7 @@ export default function AmortizationTable({ schedule, principal }: Props) {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" ref={tableRef}>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50">
