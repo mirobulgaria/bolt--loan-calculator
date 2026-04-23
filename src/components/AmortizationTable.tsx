@@ -10,6 +10,13 @@ const PAGE_SIZE = 12;
 interface Props {
   schedule: MonthlyEntry[];
   principal: number;
+  annualRate?: number;
+  periodMonths?: number;
+  extraPayment?: number;
+  oneTimePayment?: number;
+  annualPayment?: number;
+  totalPayment?: number;
+  totalInterest?: number;
 }
 
 function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
@@ -47,33 +54,81 @@ function downloadCSV(csv: string, filename: string) {
   document.body.removeChild(link);
 }
 
-async function downloadPDF(tableRef: HTMLDivElement | null) {
+async function downloadPDF(
+  tableRef: HTMLDivElement | null,
+  loanDetails: {
+    principal: number;
+    annualRate?: number;
+    periodMonths?: number;
+    extraPayment?: number;
+    oneTimePayment?: number;
+    annualPayment?: number;
+    totalPayment?: number;
+    totalInterest?: number;
+  },
+  t: any
+) {
   if (!tableRef) return;
   try {
-    const canvas = await html2canvas(tableRef, {
-      backgroundColor: '#ffffff',
-      scale: 2,
-      logging: false,
-    });
     const pdf = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
       format: 'a4',
     });
+
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    let currentY = 15;
+
+    pdf.setFontSize(18);
+    pdf.text('Amortization Schedule', 15, currentY);
+    currentY += 10;
+
+    pdf.setFontSize(10);
+    pdf.setFont(undefined, 'normal');
+
+    const details = [
+      ['Loan Amount:', `${formatCurrency(loanDetails.principal)}`],
+      ['Annual Interest Rate:', `${loanDetails.annualRate?.toFixed(2) || 'N/A'}%`],
+      ['Loan Period:', `${loanDetails.periodMonths || 'N/A'} months`],
+      ['Monthly Extra Payment:', `${formatCurrency(loanDetails.extraPayment || 0)}`],
+      ['Annual Extra Payment:', `${formatCurrency(loanDetails.annualPayment || 0)}`],
+      ['One-Time Payment:', `${formatCurrency(loanDetails.oneTimePayment || 0)}`],
+      ['Total Amount Paid:', `${formatCurrency(loanDetails.totalPayment || 0)}`],
+      ['Total Interest Paid:', `${formatCurrency(loanDetails.totalInterest || 0)}`],
+    ];
+
+    details.forEach((detail) => {
+      pdf.text(`${detail[0]}`, 15, currentY);
+      pdf.text(`${detail[1]}`, 100, currentY);
+      currentY += 6;
+    });
+
+    currentY += 5;
+
+    const canvas = await html2canvas(tableRef, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      logging: false,
+    });
+
     const imgData = canvas.toDataURL('image/png');
-    const imgWidth = pdf.internal.pageSize.getWidth();
+    const imgWidth = pageWidth - 30;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 0;
 
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pdf.internal.pageSize.getHeight();
-
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
+    if (currentY + imgHeight > pageHeight - 10) {
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pdf.internal.pageSize.getHeight();
+      currentY = 15;
+    }
+
+    pdf.addImage(imgData, 'PNG', 15, currentY, imgWidth, imgHeight);
+    let heightLeft = imgHeight;
+    let position = heightLeft;
+
+    while (position > pageHeight - 25) {
+      position -= pageHeight - 25;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 15, position - heightLeft + pageHeight - 25, imgWidth, imgHeight);
     }
 
     pdf.save('amortization-schedule.pdf');
@@ -82,10 +137,21 @@ async function downloadPDF(tableRef: HTMLDivElement | null) {
   }
 }
 
-export default function AmortizationTable({ schedule, principal }: Props) {
+export default function AmortizationTable({
+  schedule,
+  principal,
+  annualRate,
+  periodMonths,
+  extraPayment,
+  oneTimePayment,
+  annualPayment,
+  totalPayment,
+  totalInterest,
+}: Props) {
   const { t } = useLanguage();
   const [page, setPage] = useState(0);
   const tableRef = useRef<HTMLDivElement>(null);
+  const fullTableRef = useRef<HTMLDivElement>(null);
   const totalPages = Math.ceil(schedule.length / PAGE_SIZE);
   const slice = schedule.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const maxPayment = schedule[0]?.payment ?? 1;
@@ -98,7 +164,16 @@ export default function AmortizationTable({ schedule, principal }: Props) {
   };
 
   const handleExportPDF = () => {
-    downloadPDF(tableRef.current);
+    downloadPDF(fullTableRef.current, {
+      principal,
+      annualRate,
+      periodMonths,
+      extraPayment,
+      oneTimePayment,
+      annualPayment,
+      totalPayment,
+      totalInterest,
+    }, t);
   };
 
   return (
@@ -148,6 +223,7 @@ export default function AmortizationTable({ schedule, principal }: Props) {
       </div>
 
       <div className="overflow-x-auto" ref={tableRef}>
+        <div ref={fullTableRef} className="w-full">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50">
@@ -199,6 +275,7 @@ export default function AmortizationTable({ schedule, principal }: Props) {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {totalPages > 1 && (

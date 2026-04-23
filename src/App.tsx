@@ -78,7 +78,17 @@ function AppContent() {
         {result && (
           <>
             <LoanSummary result={result} principal={parseFloat(principal)} extraPayment={parseFloat(extraPayment) || 0} />
-            <AmortizationTable schedule={result.schedule} principal={parseFloat(principal)} />
+            <AmortizationTable
+              schedule={result.schedule}
+              principal={parseFloat(principal)}
+              annualRate={parseFloat(annualRate) || 0}
+              periodMonths={parseInt(periodMonths, 10) || 0}
+              extraPayment={parseFloat(extraPayment) || 0}
+              oneTimePayment={parseFloat(oneTimePayment) || 0}
+              annualPayment={parseFloat(annualPayment) || 0}
+              totalPayment={result.totalPayment}
+              totalInterest={result.totalInterest}
+            />
           </>
         )}
 
