@@ -55,7 +55,7 @@ function downloadCSV(csv: string, filename: string) {
 }
 
 async function downloadPDF(
-  tableRef: HTMLDivElement | null,
+  schedule: MonthlyEntry[],
   loanDetails: {
     principal: number;
     annualRate?: number;
@@ -66,70 +66,97 @@ async function downloadPDF(
     totalPayment?: number;
     totalInterest?: number;
   },
+  tableHeaders: string[],
   t: any
 ) {
-  if (!tableRef) return;
   try {
     const pdf = new jsPDF({
-      orientation: 'landscape',
+      orientation: 'portrait',
       unit: 'mm',
       format: 'a4',
     });
 
     const pageHeight = pdf.internal.pageSize.getHeight();
     const pageWidth = pdf.internal.pageSize.getWidth();
-    let currentY = 15;
+    const margin = 10;
+    const contentWidth = pageWidth - 2 * margin;
+    let currentY = margin;
 
-    pdf.setFontSize(18);
-    pdf.text('Amortization Schedule', 15, currentY);
-    currentY += 10;
+    pdf.setFontSize(16);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('Amortization Schedule', margin, currentY);
+    currentY += 8;
 
-    pdf.setFontSize(10);
+    pdf.setFontSize(9);
     pdf.setFont(undefined, 'normal');
 
     const details = [
-      ['Loan Amount:', `${formatCurrency(loanDetails.principal)}`],
-      ['Annual Interest Rate:', `${loanDetails.annualRate?.toFixed(2) || 'N/A'}%`],
-      ['Loan Period:', `${loanDetails.periodMonths || 'N/A'} months`],
-      ['Monthly Extra Payment:', `${formatCurrency(loanDetails.extraPayment || 0)}`],
-      ['Annual Extra Payment:', `${formatCurrency(loanDetails.annualPayment || 0)}`],
-      ['One-Time Payment:', `${formatCurrency(loanDetails.oneTimePayment || 0)}`],
-      ['Total Amount Paid:', `${formatCurrency(loanDetails.totalPayment || 0)}`],
-      ['Total Interest Paid:', `${formatCurrency(loanDetails.totalInterest || 0)}`],
+      [`${t('credit')}: ${formatCurrency(loanDetails.principal)}`, `${t('totalPayment')}: ${formatCurrency(loanDetails.totalPayment || 0)}`],
+      [`${t('rate')}: ${loanDetails.annualRate?.toFixed(2) || 'N/A'}%`, `${t('totalInterest')}: ${formatCurrency(loanDetails.totalInterest || 0)}`],
+      [`${t('period')}: ${loanDetails.periodMonths || 'N/A'} ${t('month').toLowerCase()}s`, ''],
     ];
 
     details.forEach((detail) => {
-      pdf.text(`${detail[0]}`, 15, currentY);
-      pdf.text(`${detail[1]}`, 100, currentY);
-      currentY += 6;
+      pdf.text(`${detail[0]}`, margin, currentY);
+      if (detail[1]) {
+        pdf.text(`${detail[1]}`, margin + contentWidth / 2, currentY);
+      }
+      currentY += 5;
     });
 
-    currentY += 5;
+    currentY += 3;
+    pdf.setFont(undefined, 'bold');
+    pdf.text(`${t('amortizationSchedule')} (${t('month').toLowerCase()}s)`, margin, currentY);
+    currentY += 6;
 
-    const canvas = await html2canvas(tableRef, {
-      backgroundColor: '#ffffff',
-      scale: 2,
-      logging: false,
+    pdf.setFont(undefined, 'normal');
+    pdf.setFontSize(8);
+
+    const colWidths = [12, 18, 18, 18, 18];
+    const cellHeight = 5;
+
+    const drawTableHeader = (y: number) => {
+      pdf.setFillColor(240, 240, 240);
+      pdf.setFont(undefined, 'bold');
+      let x = margin;
+      tableHeaders.forEach((header, i) => {
+        pdf.rect(x, y, colWidths[i], cellHeight, 'F');
+        pdf.text(header, x + 1, y + 3.5, { maxWidth: colWidths[i] - 2 });
+        x += colWidths[i];
+      });
+      pdf.setFont(undefined, 'normal');
+      return y + cellHeight;
+    };
+
+    const drawTableRow = (y: number, values: string[]) => {
+      let x = margin;
+      values.forEach((value, i) => {
+        pdf.rect(x, y, colWidths[i], cellHeight);
+        pdf.text(value, x + 1, y + 3.5, { maxWidth: colWidths[i] - 2 });
+        x += colWidths[i];
+      });
+      return y + cellHeight;
+    };
+
+    currentY = drawTableHeader(currentY);
+
+    schedule.forEach((entry) => {
+      if (currentY + cellHeight > pageHeight - margin) {
+        pdf.addPage();
+        currentY = margin;
+        currentY = drawTableHeader(currentY);
+      }
+
+      const values = [
+        entry.month.toString(),
+        formatCurrency(entry.payment),
+        formatCurrency(entry.interest),
+        formatCurrency(entry.principal),
+        formatCurrency(entry.balance),
+      ];
+
+      currentY = drawTableRow(currentY, values);
     });
-
-    const imgData = canvas.toDataURL('image/png');
-    const imgWidth = pageWidth - 30;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    if (currentY + imgHeight > pageHeight - 10) {
-      pdf.addPage();
-      currentY = 15;
-    }
-
-    pdf.addImage(imgData, 'PNG', 15, currentY, imgWidth, imgHeight);
-    let heightLeft = imgHeight;
-    let position = heightLeft;
-
-    while (position > pageHeight - 25) {
-      position -= pageHeight - 25;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 15, position - heightLeft + pageHeight - 25, imgWidth, imgHeight);
-    }
 
     pdf.save('amortization-schedule.pdf');
   } catch (error) {
@@ -164,7 +191,7 @@ export default function AmortizationTable({
   };
 
   const handleExportPDF = () => {
-    downloadPDF(fullTableRef.current, {
+    downloadPDF(schedule, {
       principal,
       annualRate,
       periodMonths,
@@ -173,7 +200,7 @@ export default function AmortizationTable({
       annualPayment,
       totalPayment,
       totalInterest,
-    }, t);
+    }, tableHeaders, t);
   };
 
   return (
