@@ -55,6 +55,7 @@ function downloadCSV(csv: string, filename: string) {
 }
 
 async function downloadPDF(
+  fullTableRef: HTMLDivElement | null,
   schedule: MonthlyEntry[],
   loanDetails: {
     principal: number;
@@ -69,94 +70,66 @@ async function downloadPDF(
   tableHeaders: string[],
   t: any
 ) {
+  if (!fullTableRef) return;
+
   try {
+    const canvas = await html2canvas(fullTableRef, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      logging: false,
+      useCORS: true,
+    });
+
     const pdf = new jsPDF({
-      orientation: 'portrait',
+      orientation: 'landscape',
       unit: 'mm',
       format: 'a4',
     });
 
+    const imgData = canvas.toDataURL('image/png');
     const pageHeight = pdf.internal.pageSize.getHeight();
     const pageWidth = pdf.internal.pageSize.getWidth();
     const margin = 10;
-    const contentWidth = pageWidth - 2 * margin;
-    let currentY = margin;
+    const imgWidth = pageWidth - 2 * margin;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    pdf.setFontSize(16);
-    pdf.setFont(undefined, 'bold');
-    pdf.text('Amortization Schedule', margin, currentY);
-    currentY += 8;
+    let yPosition = margin;
 
-    pdf.setFontSize(9);
-    pdf.setFont(undefined, 'normal');
+    const headerDiv = document.createElement('div');
+    headerDiv.style.width = `${pageWidth - 2 * margin}mm`;
+    headerDiv.style.padding = '10px';
+    headerDiv.style.fontFamily = 'Arial, sans-serif';
+    headerDiv.style.fontSize = '14px';
+    headerDiv.innerHTML = `
+      <h2 style="margin: 0 0 10px 0; font-size: 18px;">${t('amortizationSchedule')}</h2>
+      <p style="margin: 3px 0; font-size: 10px;">${t('creditAmount')}: ${formatCurrency(loanDetails.principal)} | ${t('totalPayment')}: ${formatCurrency(loanDetails.totalPayment || 0)}</p>
+      <p style="margin: 3px 0; font-size: 10px;">${t('interestRate')}: ${loanDetails.annualRate?.toFixed(2) || 'N/A'}% | ${t('totalInterest')}: ${formatCurrency(loanDetails.totalInterest || 0)}</p>
+      <p style="margin: 3px 0; font-size: 10px;">${t('periodMonths')}: ${loanDetails.periodMonths || 'N/A'}</p>
+    `;
 
-    const details = [
-      [`${t('creditAmount')}: ${formatCurrency(loanDetails.principal)}`, `${t('totalPayment')}: ${formatCurrency(loanDetails.totalPayment || 0)}`],
-      [`${t('interestRate')}: ${loanDetails.annualRate?.toFixed(2) || 'N/A'}%`, `${t('totalInterest')}: ${formatCurrency(loanDetails.totalInterest || 0)}`],
-      [`${t('periodMonths')}: ${loanDetails.periodMonths || 'N/A'}`, ''],
-    ];
-
-    details.forEach((detail) => {
-      pdf.text(`${detail[0]}`, margin, currentY);
-      if (detail[1]) {
-        pdf.text(`${detail[1]}`, margin + contentWidth / 2, currentY);
-      }
-      currentY += 5;
+    const headerCanvas = await html2canvas(headerDiv, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      logging: false,
     });
 
-    currentY += 3;
-    pdf.setFont(undefined, 'bold');
-    pdf.text(t('amortizationSchedule'), margin, currentY);
-    currentY += 6;
+    const headerImgData = headerCanvas.toDataURL('image/png');
+    const headerHeight = (headerCanvas.height * imgWidth) / headerCanvas.width;
 
-    pdf.setFont(undefined, 'normal');
-    pdf.setFontSize(8);
+    if (yPosition + headerHeight < pageHeight - margin) {
+      pdf.addImage(headerImgData, 'PNG', margin, yPosition, imgWidth, headerHeight);
+      yPosition += headerHeight + 5;
+    }
 
-    const colWidths = [12, 18, 18, 18, 18];
-    const cellHeight = 5;
+    pdf.addImage(imgData, 'PNG', margin, yPosition, imgWidth, imgHeight);
+    yPosition += imgHeight;
 
-    const drawTableHeader = (y: number) => {
-      pdf.setFillColor(240, 240, 240);
-      pdf.setFont(undefined, 'bold');
-      let x = margin;
-      tableHeaders.forEach((header, i) => {
-        pdf.rect(x, y, colWidths[i], cellHeight, 'F');
-        pdf.text(header, x + 1, y + 3.5, { maxWidth: colWidths[i] - 2 });
-        x += colWidths[i];
-      });
-      pdf.setFont(undefined, 'normal');
-      return y + cellHeight;
-    };
-
-    const drawTableRow = (y: number, values: string[]) => {
-      let x = margin;
-      values.forEach((value, i) => {
-        pdf.rect(x, y, colWidths[i], cellHeight);
-        pdf.text(value, x + 1, y + 3.5, { maxWidth: colWidths[i] - 2 });
-        x += colWidths[i];
-      });
-      return y + cellHeight;
-    };
-
-    currentY = drawTableHeader(currentY);
-
-    schedule.forEach((entry) => {
-      if (currentY + cellHeight > pageHeight - margin) {
-        pdf.addPage();
-        currentY = margin;
-        currentY = drawTableHeader(currentY);
-      }
-
-      const values = [
-        entry.month.toString(),
-        formatCurrency(entry.payment),
-        formatCurrency(entry.interest),
-        formatCurrency(entry.principal),
-        formatCurrency(entry.balance),
-      ];
-
-      currentY = drawTableRow(currentY, values);
-    });
+    while (yPosition > pageHeight - margin) {
+      pdf.addPage();
+      yPosition -= pageHeight;
+      pdf.addImage(imgData, 'PNG', margin, yPosition - imgHeight, imgWidth, imgHeight);
+      yPosition += imgHeight;
+    }
 
     pdf.save('amortization-schedule.pdf');
   } catch (error) {
@@ -191,7 +164,7 @@ export default function AmortizationTable({
   };
 
   const handleExportPDF = () => {
-    downloadPDF(schedule, {
+    downloadPDF(fullTableRef.current, schedule, {
       principal,
       annualRate,
       periodMonths,
