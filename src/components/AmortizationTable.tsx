@@ -91,9 +91,9 @@ async function downloadPDF(
     pdf.setFont(undefined, 'normal');
 
     const details = [
-      [`${t('credit')}: ${formatCurrency(loanDetails.principal)}`, `${t('totalPayment')}: ${formatCurrency(loanDetails.totalPayment || 0)}`],
-      [`${t('rate')}: ${loanDetails.annualRate?.toFixed(2) || 'N/A'}%`, `${t('totalInterest')}: ${formatCurrency(loanDetails.totalInterest || 0)}`],
-      [`${t('period')}: ${loanDetails.periodMonths || 'N/A'} ${t('month').toLowerCase()}s`, ''],
+      [`${t('creditAmount')}: ${formatCurrency(loanDetails.principal)}`, `${t('totalPayment')}: ${formatCurrency(loanDetails.totalPayment || 0)}`],
+      [`${t('interestRate')}: ${loanDetails.annualRate?.toFixed(2) || 'N/A'}%`, `${t('totalInterest')}: ${formatCurrency(loanDetails.totalInterest || 0)}`],
+      [`${t('periodMonths')}: ${loanDetails.periodMonths || 'N/A'}`, ''],
     ];
 
     details.forEach((detail) => {
@@ -106,7 +106,7 @@ async function downloadPDF(
 
     currentY += 3;
     pdf.setFont(undefined, 'bold');
-    pdf.text(`${t('amortizationSchedule')} (${t('month').toLowerCase()}s)`, margin, currentY);
+    pdf.text(t('amortizationSchedule'), margin, currentY);
     currentY += 6;
 
     pdf.setFont(undefined, 'normal');
